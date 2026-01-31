@@ -9,7 +9,12 @@ const { pipeline } = require("stream");
 
 const PORT = 5000;
 const SOFFICE_PATH =
-  "C:\\Program Files\\LibreOffice\\program\\soffice.exe";
+  process.platform === "win32"
+  ? "C:\\Program Files\\LibreOffice\\program\\soffice.exe"
+  : "soffice";
+
+  
+
 
 const app = express();
 app.use(cors());
