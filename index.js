@@ -4,10 +4,13 @@ const multer = require("multer");
 const fs = require("fs-extra");
 const path = require("path");
 const cors = require("cors");
-const { execFile } = require("child_process");
+const { spawn } = require("child_process");
 const { pipeline } = require("stream");
+const dotenv = require("dotenv");
 
-const PORT = 5000;
+dotenv.config();
+
+const PORT = process.env.PORT || 5000;
 const SOFFICE_PATH =
   process.platform === "win32"
   ? "C:\\Program Files\\LibreOffice\\program\\soffice.exe"
@@ -71,21 +74,24 @@ app.post(
       const outputPath = path.join(outputDir, pdfName);
 
       await new Promise((resolve, reject) => {
-        execFile(
-          SOFFICE_PATH,
-          [
-            "--headless",
-            "--nologo",
-            "--nofirststartwizard",
-            "--convert-to",
-            "pdf",
-            "--outdir",
-            outputDir,
-            inputPath,
-          ],
-          (err) => (err ? reject(err) : resolve())
-        );
-      });
+  const process = spawn(SOFFICE_PATH, [
+    "--headless",
+    "--nologo",
+    "--nofirststartwizard",
+    "--convert-to",
+    "pdf",
+    "--outdir",
+    outputDir,
+    inputPath,
+  ]);
+
+  process.on("error", reject);
+  process.on("close", (code) => {
+    if (code === 0) resolve();
+    else reject(new Error("LibreOffice failed"));
+  });
+});
+
 
       if (!(await fs.pathExists(outputPath))) {
         throw new Error("PDF not generated");
